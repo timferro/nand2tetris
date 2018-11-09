@@ -39,5 +39,31 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    -cInstrAddr
+    -cLoadAddr // == d1
+    -cJmp
+    -cInc
+    -cAOrMem
+    -czx
+    -cnx
+    -czy
+    -cny
+    -cf
+    -cno
+    -cLoadData // == d2
+
+    -zrout //use these to determine jmp condition
+    -ngout
+
+    --->writeM // == d3
+
+    Mux16(a=instruction,b=aluOutM,sel=cInstrAddr,out=aRegIn);
+    DRegister(in=aRegIn,load=cLoadAddr,out=aRegOut,out=addressM);
+
+    PC(in=aRegOut,load=cJmp,inc=cInc,reset=reset,out=pc);
+
+    Mux16(a=aRegOut,b=inM,sel=cAOrMem,out=aluAIn);
+    ALU(x=dRegOut,y=aluAIn,zx=czx,nx=cnx,zy=czy,ny=cny,f=cf,no=cno,out=aluOutM,out=outM,zr=zrout,ng=ngout)
+
+    DRegister(in=aluOutM,load=cLoadData,out=dRegOut);
 }
