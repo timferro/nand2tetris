@@ -39,31 +39,43 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    -cInstrAddr
-    -cLoadAddr // == d1
-    -cJmp
-    -cInc
-    -cAOrMem
-    -czx
-    -cnx
-    -czy
-    -cny
-    -cf
-    -cno
-    -cLoadData // == d2
+    Not(in=instruction[15],out=aInstruction);
+    Not(in=aInstruction,out=cInstruction);
 
-    -zrout //use these to determine jmp condition
-    -ngout
+    And(a=cInstruction,b=instruction[5],out=useAluOut);
+    Mux16(a=instruction,b=aluOut,sel=useAluOut,out=aRegIn);
 
-    --->writeM // == d3
+    Or(a=aInstruction,b=useAluOut,out=loadA);
+    ARegister(in=aRegIn,load=loadA,out=aRegOut,out[0..14]=addressM);
 
-    Mux16(a=instruction,b=aluOutM,sel=cInstrAddr,out=aRegIn);
-    DRegister(in=aRegIn,load=cLoadAddr,out=aRegOut,out=addressM);
+    And(a=cInstruction,b=instruction[4],out=loadD);
+    DRegister(in=aluOut,load=loadD,out=dRegOut);
 
-    PC(in=aRegOut,load=cJmp,inc=cInc,reset=reset,out=pc);
+    Mux16(a=aRegOut,b=inM,sel=instruction[12],out=aluAddr);
 
-    Mux16(a=aRegOut,b=inM,sel=cAOrMem,out=aluAIn);
-    ALU(x=dRegOut,y=aluAIn,zx=czx,nx=cnx,zy=czy,ny=cny,f=cf,no=cno,out=aluOutM,out=outM,zr=zrout,ng=ngout)
+    ALU(x=dRegOut,y=aluAddr,
+        zx=instruction[11],
+        nx=instruction[10],
+        zy=instruction[9],
+        ny=instruction[8],
+        f=instruction[7],
+        no=instruction[6],
+        out=aluOut,out=outM,
+        zr=zrOut,ng=ngOut);
 
-    DRegister(in=aluOutM,load=cLoadData,out=dRegOut);
+    And(a=cInstruction,b=instruction[3],out=writeM);
+
+    And(a=ngOut,b=instruction[2],out=jlt);
+    And(a=zrOut,b=instruction[1],out=jeq);
+    Or(a=ngOut,b=zrOut,out=lte);
+    Not(in=lte,out=pos);
+    And(a=pos,b=instruction[0],out=jgt);
+
+    Or(a=jlt,b=jeq,out=jle);
+    Or(a=jle,b=jgt,out=jmp);
+
+    And(a=cInstruction,b=jmp,out=pcLoad);
+    Not(in=pcLoad,out=pcInc);
+
+    PC(in=aRegOut,load=pcLoad,inc=pcInc,reset=reset,out[0..14]=pc);
 }
