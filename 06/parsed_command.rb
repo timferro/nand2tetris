@@ -1,5 +1,5 @@
 class ParsedCommand
-  attr_reader :line_number, :type, :symbol, :dest, :comp, :jump
+  attr_reader :line_number, :type, :symbol, :dest, :comp, :jump, :address
 
   A_COMMAND = 0
   C_COMMAND = 1
@@ -35,7 +35,7 @@ class ParsedCommand
 
   def parse_symbol
     return nil unless @type == L_COMMAND
-    @line.scan(/^\(([A-Z]*)\)/).first.first
+    @line.scan(/^\((.*)\)/).first.first
   end
 
   def parse_dest
